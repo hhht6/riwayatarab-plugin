@@ -1,7 +1,4 @@
-{
-  "id": "riwayatarab-repo",
-  "name": "d",
-  "plugins": [
+[
     {
       "id": "riwayatarab",
       "name": "روايات عرب",
@@ -13,4 +10,3 @@
       "site": "https://riwayatarab.com"
     }
   ]
-}
