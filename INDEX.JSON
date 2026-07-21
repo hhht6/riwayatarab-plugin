@@ -1,17 +1,18 @@
 {
-  "id": "riwayatarab",
-  "name": "المستودع العربي",
-  "description": "مستودع يحتوي على إضافات عربية لـ LNReader",
+  "id": "riwayatarab-repo",
+  "name": "مستودع روايات عرب",
+  "description": "مستودع يحتوي على إضافة موقع روايات عرب لـ LNReader",
+  "author": "hhht6",
   "plugins": [
     {
       "id": "riwayatarab",
-      "name": "Riwayat Arab",
+      "name": "روايات عرب",
       "version": "1.2.0",
-      "author": "HHHT6",
-      "description": "إضافة لموقع روايات عرب - قراءة الروايات العربية",
-      "source": "https://raw.githubusercontent.com/HHHT6/riwayatarab-plugin/main/riwayatarab.ts",
-      "icon": "https://raw.githubusercontent.com/اHHHT6/riwayatarab-plugin/main/icon.png",
-      "language": "ar"
+      "author": "hhht6",
+      "description": "إضافة لموقع روايات عرب - قراءة الروايات العربية مجاناً",
+      "source": "https://raw.githubusercontent.com/hhht6/riwayatarab-plugin/main/riwayatarab.ts",
+      "language": "ar",
+      "site": "https://riwayatarab.com"
     }
   ]
 }
