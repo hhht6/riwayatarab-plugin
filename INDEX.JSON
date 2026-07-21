@@ -1,0 +1,17 @@
+{
+  "id": "riwayatarab",
+  "name": "المستودع العربي",
+  "description": "مستودع يحتوي على إضافات عربية لـ LNReader",
+  "plugins": [
+    {
+      "id": "riwayatarab",
+      "name": "Riwayat Arab",
+      "version": "1.2.0",
+      "author": "HHHT6",
+      "description": "إضافة لموقع روايات عرب - قراءة الروايات العربية",
+      "source": "https://raw.githubusercontent.com/HHHT6/riwayatarab-plugin/main/riwayatarab.ts",
+      "icon": "https://raw.githubusercontent.com/اHHHT6/riwayatarab-plugin/main/icon.png",
+      "language": "ar"
+    }
+  ]
+}
