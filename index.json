@@ -10,7 +10,7 @@
       "version": "1.2.0",
       "author": "hhht6",
       "description": "إضافة لموقع روايات عرب - قراءة الروايات العربية مجاناً",
-      "source": "https://raw.githubusercontent.com/hhht6/riwayatarab-plugin/main/riwayatarab.ts",
+      "source": https://raw.githubusercontent.com/hhht6/riwayatarab-plugin/refs/heads/main/riwayatarab.ts,
       "language": "ar",
       "site": "https://riwayatarab.com"
     }
