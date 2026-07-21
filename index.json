@@ -1,8 +1,6 @@
 {
   "id": "riwayatarab-repo",
-  "name": "مستودع روايات عرب",
-  "description": "مستودع يحتوي على إضافة موقع روايات عرب لـ LNReader",
-  "author": "hhht6",
+  "name": "d",
   "plugins": [
     {
       "id": "riwayatarab",
