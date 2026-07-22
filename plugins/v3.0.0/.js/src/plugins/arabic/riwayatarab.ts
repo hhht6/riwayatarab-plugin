@@ -8,7 +8,7 @@ class RiwayatArab implements Plugin.PagePlugin {
   id = 'riwayatarab';
   name = 'Riwayat Arab';
   version = '1.2.0';
-  icon = "https://raw.githubusercontent.com/hhht6/riwayatarab-plugin/main/icon.png";
+  icon = "https://github.com/hhht6/riwayatarab-plugin/blob/main/plugins/v3.0.0/public/static/multisrc/madara/arnovel/icon.jpg?raw=true";
   site = 'https://riwayatarab.com/';
 
   private baseApi = 'https://api.riwayatarab.com/api';
