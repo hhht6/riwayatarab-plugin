@@ -6,35 +6,160 @@ import { load as parseHTML } from 'cheerio';
 class RiwayatArab {
   id = 'riwayatarab';
   name = 'Riwayat Arab';
-  version = '1.2.0';
+  version = '1.2.1';
   icon = "https://github.com/hhht6/riwayatarab-plugin/blob/main/plugins/v3.0.0/public/static/multisrc/madara/arnovel/icon.jpg?raw=true";
   site = 'https://riwayatarab.com/';
 
   baseApi = 'https://api.riwayatarab.com/api';
 
-  // استخراج الـ slug من مسار الرواية
   extractSlug(novelPath) {
     return novelPath.replace('novel/', '').replace(/\/$/, '');
   }
 
-  // جلب البيانات من API
   async fetchApi(endpoint) {
     const url = `${this.baseApi}/${endpoint}`;
     const response = await fetchApi(url);
-    return response.json();
+    const json = await response.json();
+    // بعض الـ APIs تلف البيانات داخل data/result، نطبّعها هنا
+    return json?.data ?? json?.result ?? json;
   }
 
-  // جلب الروايات الشائعة أو الأحدث
+  // يستخرج مصفوفة الروايات بغض النظر عن شكل الاستجابة
+  extractNovelsArray(payload) {
+    if (Array.isArray(payload)) return payload;
+    return payload?.novels ?? payload?.items ?? payload?.data ?? [];
+  }
+
   async popularNovels(page, { showLatestNovels }) {
     const sort = showLatestNovels ? 'created_at' : 'views';
-    const url = `${this.baseApi}/novels?page=${page}&limit=24&sort=${sort}`;
+    const payload = await this.fetchApi(`novels?page=${page}&limit=24&sort=${sort}`);
+    const novels = this.extractNovelsArray(payload);
+
+    if (!novels.length) {
+      console.warn('[RiwayatArab] popularNovels: لم يتم العثور على روايات — تحقق من شكل الاستجابة:', payload);
+    }
+
+    return novels.map(novel => ({
+      name: novel.title ?? novel.name ?? 'بدون عنوان',
+      path: `novel/${novel.slug ?? novel.id}`,
+      cover: novel.cover_image ?? novel.cover ?? defaultCover,
+    }));
+  }
+
+  async parseNovel(novelPath) {
+    const slug = this.extractSlug(novelPath);
+    const payload = await this.fetchApi(`novels/${slug}`);
+    // بعض الـ APIs تلف الرواية داخل novel/data مرة ثانية
+    const novel = payload?.novel ?? payload;
+
+    if (!novel || (!novel.id && !novel._id && !novel.title)) {
+      console.warn('[RiwayatArab] parseNovel: استجابة غير متوقعة:', payload);
+      throw new Error('الرواية غير موجودة');
+    }
+
+    const totalChapters = novel.total_chapters ?? novel.chapters_count ?? 0;
+    const totalPages = Math.max(1, Math.ceil(totalChapters / 24));
+
+    return {
+      path: novelPath,
+      name: novel.title ?? novel.name ?? 'بدون عنوان',
+      author: novel.author ?? 'غير معروف',
+      summary: novel.description ?? novel.summary ?? '',
+      cover: novel.cover_image ?? novel.cover ?? defaultCover,
+      status: novel.status ?? 'Unknown',
+      genres: Array.isArray(novel.tags) ? novel.tags.join(', ') : (novel.category_name ?? ''),
+      totalPages,
+      chapters: [],
+    };
+  }
+
+  async parsePage(novelPath, page) {
+    const slug = this.extractSlug(novelPath);
+    const pageNum = parseInt(page, 10) || 1;
+    const payload = await this.fetchApi(`novels/${slug}/chapters?page=${pageNum}&limit=24`);
+    const chaptersRaw = payload?.chapters ?? payload?.items ?? (Array.isArray(payload) ? payload : []);
+
+    if (!chaptersRaw.length) {
+      console.warn('[RiwayatArab] parsePage: لا توجد فصول — تحقق من شكل الاستجابة:', payload);
+      return { chapters: [] };
+    }
+
+    const chapters = chaptersRaw.map(ch => ({
+      name: ch.title ?? `الفصل ${ch.chapter_number ?? ch.number}`,
+      path: `${novelPath}/chapter/${ch.chapter_number ?? ch.number}`,
+      releaseTime: ch.created_at ?? new Date().toISOString(),
+      chapterNumber: ch.chapter_number ?? ch.number ?? 0,
+    }));
+
+    return { chapters };
+  }
+
+  async parseChapter(chapterPath) {
+    const match = chapterPath.match(/chapter\/(\d+)/);
+    if (!match) throw new Error('رقم الفصل غير صحيح');
+    const chapterNumber = match[1];
+
+    try {
+      const slug = this.extractSlug(chapterPath.split('/chapter/')[0]);
+      const payload = await this.fetchApi(`novels/${slug}/chapters/${chapterNumber}`);
+      const content = payload?.content ?? payload?.chapter?.content;
+      if (content) return content;
+    } catch (err) {
+      console.warn('[RiwayatArab] parseChapter: فشل جلب المحتوى من API، سيتم تجربة HTML:', err);
+    }
+
+    const url = `https://riwayatarab.com/${chapterPath}`;
     const response = await fetchApi(url);
-    const data = await response.json();
+    const html = await response.text();
+    const $ = parseHTML(html);
 
-    if (!data.novels) return [];
+    let content = $('div.chapter-content, div.prose, article div:not(:has(script))').html() || '';
 
-    return data.novels.map(novel => ({
-      name: novel.title || 'بدون عنوان',
+    if (!content) {
+      $('script, style, header, footer, nav').remove();
+      content = $('main').html() || $('body').html() || '';
+    }
+
+    return content || 'المحتوى غير متوفر';
+  }
+
+  async searchNovels(searchTerm, page) {
+    const payload = await this.fetchApi(`novels?search=${encodeURIComponent(searchTerm)}&page=${page}&limit=24`);
+    const novels = this.extractNovelsArray(payload);
+
+    return novels.map(novel => ({
+      name: novel.title ?? novel.name ?? 'بدون عنوان',
+      path: `novel/${novel.slug ?? novel.id}`,
+      cover: novel.cover_image ?? novel.cover ?? defaultCover,
+    }));
+  }
+
+  filters = {
+    sort: {
+      value: 'views',
+      label: 'ترتيب حسب',
+      options: [
+        { label: 'الأكثر مشاهدة', value: 'views' },
+        { label: 'الأحدث', value: 'created_at' },
+        { label: 'الأكثر تقييماً', value: 'rating' },
+      ],
+      type: FilterTypes.Picker,
+    },
+    status: {
+      value: '',
+      label: 'الحالة',
+      options: [
+        { label: 'الكل', value: '' },
+        { label: 'مستمرة', value: 'ongoing' },
+        { label: 'مكتملة', value: 'completed' },
+        { label: 'متوقفة', value: 'hiatus' },
+      ],
+      type: FilterTypes.Picker,
+    },
+  };
+}
+
+export default new RiwayatArab();      name: novel.title || 'بدون عنوان',
       path: `novel/${novel.slug}`,
       cover: novel.cover_image || defaultCover,
     }));
